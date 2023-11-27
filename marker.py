@@ -14,6 +14,16 @@ def ekf_correct(state, P, H, R, measurement):
     P = P - np.dot(np.dot(K, H), P)
     return state, P
 
+def save_and_draw_trajectory(trajectory, filename='trajectory.txt'):
+    with open(filename, 'w') as file:
+        for point in trajectory:
+            file.write(f"{point[0]}, {point[1]}\n")
+
+    # Draw the trajectory on the frame
+    for i in range(1, len(trajectory)):
+        cv2.line(frame, (int(trajectory[i-1][0]), int(trajectory[i-1][1])),
+                 (int(trajectory[i][0]), int(trajectory[i][1])), (255, 0, 0), 2)
+
 # Initialize video capture
 cap = cv2.VideoCapture(0)  # Change to your video source
 
@@ -33,6 +43,8 @@ Q = np.eye(4, dtype=np.float32)  # Process noise covariance
 # Measurement matrix (identity matrix since we directly measure the position)
 H = np.eye(2, 4, dtype=np.float32)
 R = np.eye(2, dtype=np.float32)  # Measurement noise covariance
+
+trajectory = []  # List to store the trajectory
 
 while True:
     ret, frame = cap.read()
@@ -55,6 +67,10 @@ while True:
         state, P = ekf_correct(state, P, H, R, measurement)
 
         estimated_location = state[:2]
+
+        # Append the current location to the trajectory list
+        trajectory.append(estimated_location)
+
     else:
         # Marker not detected
         estimated_location = state[:2]
@@ -68,6 +84,8 @@ while True:
     if cv2.waitKey(1) & 0xFF == 27:  # Press 'Esc' to exit
         break
 
+# Save the trajectory to a file and draw it on the frame
+save_and_draw_trajectory(trajectory)
+
 cap.release()
 cv2.destroyAllWindows()
-
